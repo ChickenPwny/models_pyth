@@ -13,8 +13,6 @@ from django.contrib.postgres.fields import JSONField
 from django.conf import settings
 from django.conf.urls.static import static
 
-BaseModel = models.Model
-
 Choices_Severity= [
 ('info, low, medium, high, critical, unknown', 'All'),
  ('info', 'Info'),
@@ -46,12 +44,6 @@ choices_request_methods= [
     ('put', 'PUT'),
     ('trace', 'TRACE')
     ]
-
-
-
-def user_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
-    return 'ATTACK/{0}'.format(filename)
 
 ##############################
 ######## customers
@@ -87,7 +79,7 @@ class Customers(models.Model):
 ##############################
 ######## Records
 ##############################
-class Record(BaseModel):
+class Record(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer_id = models.ForeignKey(Customers, on_delete=models.CASCADE, related_name='customer_records', blank=True)
     md5 = models.CharField(max_length=32, unique=True)
@@ -108,7 +100,7 @@ class Record(BaseModel):
     Images= models.ImageField(upload_to='RecordPictures', blank=True)
     #whoIs = models.JSONField(default=dict, blank=True)
 
-class GEOCODES(BaseModel):
+class GEOCODES(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='GEOCODES')
     ip_address = models.CharField(max_length=256, blank=True)
@@ -121,13 +113,13 @@ class GEOCODES(BaseModel):
 ##############################
 # NMap NIST 
 ##############################
-class CPEID(BaseModel):
+class CPEID(models.Model):
     cpeId = models.CharField(max_length=175, primary_key=True)
     CPE = models.CharField(max_length=100)
     service = models.CharField(max_length=75)
     version = models.CharField(max_length=128)
 
-class csv_version(BaseModel):
+class csv_version(models.Model):
     vectorString = models.CharField(primary_key=True, max_length=50)
     version = models.CharField(max_length=7)
     accessVector = models.CharField(max_length=50)
@@ -139,7 +131,7 @@ class csv_version(BaseModel):
     baseScore = models.CharField(max_length=5)
     baseSeverity = models.CharField(max_length=9)
 
-class nist_description(BaseModel):
+class nist_description(models.Model):
     nist_record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='Nist_records', blank=True, null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     CPEServiceID = models.ForeignKey(CPEID, on_delete=models.CASCADE, related_name='CPEService')
@@ -149,15 +141,15 @@ class nist_description(BaseModel):
     descriptions = models.TextField(unique=True)
     references = ArrayField(models.CharField(max_length=2048), blank=True)
 
-class ThreatModeling(BaseModel): 
+class ThreatModeling(models.Model): 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE, related_name='customer_threat_modeling')
 
-class TldIndex(BaseModel):
+class TldIndex(models.Model):
     tld = models.CharField(unique=True, max_length=256)
     count = models.IntegerField(blank=True)
 
-class Nmap(BaseModel):
+class Nmap(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='Nmaps_record')
     #nmapNistVulns = models.ForeignKey(nist_description, on_delete=models.CASCADE, related_name='nmapNistVulns', blank=True, default = None)
@@ -186,7 +178,7 @@ class Nmap(BaseModel):
 ##############################
 ######## Control
 ##############################
-class GnawControl(BaseModel):
+class GnawControl(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     NucleiScan = models.BooleanField(default='True')
@@ -208,7 +200,7 @@ class GnawControl(BaseModel):
     failed = models.BooleanField(default='False', help_text='<fieldset style="background-color: lightblue;display: inline-block;">An exception occured.</fieldset>')
     scan_objects = fields.ArrayField(models.CharField(max_length=256), blank=True, default=list)
 
-class EgoControl(BaseModel):
+class EgoControl(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     ScanProjectByID = models.CharField(max_length = 75, blank=True, help_text='<fieldset style="background-color: lightblue;display: inline-block;">The uniquic identifier stirng assigned to id Objects.</fieldset>')
@@ -244,7 +236,7 @@ class EgoControl(BaseModel):
     failed = models.BooleanField(default='False')
     scan_objects = fields.ArrayField(models.CharField(max_length=256), blank=True, default=list)
 
-class MantisControls(BaseModel):
+class MantisControls(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     NucleiScan = models.BooleanField(default='True')
@@ -270,7 +262,7 @@ class MantisControls(BaseModel):
 ##############################
 ##### manager/api/credentials
 ##############################
-class projectManger(BaseModel):
+class projectManger(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer_id = models.ForeignKey(Customers, on_delete=models.CASCADE, related_name='customer_projectManger', blank=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
@@ -278,7 +270,7 @@ class projectManger(BaseModel):
     lastupdatedby = User.objects.filter(id=True)
     comment = models.TextField(unique=True)
     
-class DocManger(BaseModel): 
+class DocManger(models.Model): 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)    
     projectManDoc_id = models.ForeignKey(projectManger, on_delete=models.CASCADE, related_name='projectManDoc_id')
 
@@ -288,7 +280,7 @@ class DocManger(BaseModel):
     comment = models.TextField(unique=True)
     Files =  models.FileField(upload_to='Matrix/Files', blank=True)
 
-class FindingMatrix(BaseModel):
+class FindingMatrix(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     projectManMatrix_id = models.ForeignKey(projectManger, on_delete=models.CASCADE, related_name='projectManMatrix_id')
     found = models.CharField(max_length=500, blank=True)
@@ -309,11 +301,11 @@ class FindingMatrix(BaseModel):
     Images= models.ImageField(upload_to='RecordPictures/', blank=True)
     Files =  models.FileField(upload_to='Matrix/Files', blank=True)
 
-class apiproviders(BaseModel):
+class apiproviders(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(choices=Choices_APIProviders, max_length=100, default='unknown', unique=True)
 
-class api(BaseModel):
+class api(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     apiproviders_id = models.ForeignKey(apiproviders, on_delete=models.CASCADE, related_name='ApiProviders', blank=True)
     dateCreated = models.DateTimeField(auto_now_add=True, blank=True, editable=False)
@@ -325,7 +317,7 @@ class api(BaseModel):
     userName = models.CharField(max_length=256, blank=True)
     inuse = models.BooleanField(default='False')
 
-class Credential(BaseModel):
+class Credential(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     credential = models.ForeignKey(Customers, on_delete=models.CASCADE, related_name='credentials_customers', null=True)
     dateCreated = models.DateTimeField(auto_now_add=True, blank=True, editable=False)
@@ -337,7 +329,7 @@ class Credential(BaseModel):
 ##############################
 ##### data systems
 ##############################
-class RequestMetaData(BaseModel):
+class RequestMetaData(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='RecRequestMetaData')
     md5 = models.CharField(max_length=32, unique=True)
@@ -353,7 +345,7 @@ class RequestMetaData(BaseModel):
     rawHTML = models.TextField(blank=True)
     #content_length = models.CharField(max_length=7, unique=True)
     
-class whois(BaseModel):
+class whois(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer_id = models.ForeignKey(Customers, on_delete=models.CASCADE, related_name='whois_customers', blank=True)
     domain_name = fields.ArrayField(models.CharField(max_length=256), blank=True, default=list)
@@ -376,7 +368,7 @@ class whois(BaseModel):
     registrant_postal_code = models.CharField(max_length=254, blank=True, null=True)
     country = models.CharField(max_length=4, blank=True, null=True)
 
-class Certificate(BaseModel):
+class Certificate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='Certificates_record')
     md5 = models.CharField(max_length=32, unique=True)
@@ -390,7 +382,7 @@ class Certificate(BaseModel):
     crlDistributionPoints = models.URLField(max_length = 2048, blank=True)
     PEM = models.TextField(blank=True)
 
-class DNSQuery(BaseModel):
+class DNSQuery(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='DNSQuery_record')
     md5 = models.CharField( max_length=32, unique=True)
@@ -404,7 +396,7 @@ class DNSQuery(BaseModel):
     TXT = models.TextField(blank=True)
     ANY = models.TextField(blank=True)
 
-class DNSAuthority(BaseModel):
+class DNSAuthority(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='DNSAuthority_record')
     md5 = models.CharField( max_length=32, unique=True)
@@ -418,7 +410,7 @@ class DNSAuthority(BaseModel):
     TXT = models.TextField(blank=True)
     ANY = models.CharField(max_length=500, blank=True)
 
-class Template(BaseModel):
+class Template(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='Templates_record')
     date = models.DateTimeField(auto_now_add=True, null=True)
@@ -437,7 +429,7 @@ class Template(BaseModel):
     curl_command = models.TextField(blank=True, null=True)
     Submitted = models.BooleanField(default='False')
 
-class External_Internal_Checklist(BaseModel):
+class External_Internal_Checklist(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     Grouping = models.CharField(max_length=100, default='Ego') 
     tool = models.DateField(auto_now_add=True)
@@ -446,7 +438,7 @@ class External_Internal_Checklist(BaseModel):
     status = models.BooleanField(default='False')
     notes = models.TextField(blank=True)
     
-class WordListGroup(BaseModel):
+class WordListGroup(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     groupName = models.CharField( max_length=256 )
     type = models.CharField(max_length=32)
@@ -455,7 +447,7 @@ class WordListGroup(BaseModel):
     def __unicode__(self):
         return self.groupName
 
-class WordList(BaseModel):
+class WordList(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     WordList = models.ForeignKey(WordListGroup, on_delete=models.CASCADE, related_name='WordList')
     type = models.CharField(max_length=32, default="None", blank=True)
@@ -466,7 +458,7 @@ class WordList(BaseModel):
 ##### vulns
 ##############################
 
-class Nuclei(BaseModel):
+class Nuclei(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='nucleiRecords_record')
     md5 = models.CharField(max_length=32, unique=True)
@@ -476,7 +468,7 @@ class Nuclei(BaseModel):
     #severity = models.CharField(choices=Choices_Severity, max_length=8, default='unknown')
     vulnerable = models.URLField(max_length = 2048, blank=True)
 
-class VulnCard(BaseModel):
+class VulnCard(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=256, unique=True, blank=True)
     vulnClass = models.CharField(max_length=256, null=True)
@@ -492,7 +484,7 @@ class VulnCard(BaseModel):
     references = fields.ArrayField(models.URLField(max_length = 2048), blank=True)
     pictures = models.ImageField(upload_to='ProofOfConcept', blank=True)
 
-class FoundVuln(BaseModel):
+class FoundVuln(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     vuln_cardId = models.ForeignKey(VulnCard, on_delete=models.CASCADE, related_name='vuln_cardId', blank=True, null=True)
     record_id = models.ForeignKey(Record, on_delete=models.CASCADE, related_name='foundVuln_record', blank=True, null=True)
@@ -522,7 +514,7 @@ class FoundVuln(BaseModel):
     matchedAt_bodys = models.CharField(max_length=2048, blank=True)
     curl_command = models.TextField(blank=True)
 
-class FoundVulnDetails(BaseModel):
+class FoundVulnDetails(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     FoundVuln_id =  models.ForeignKey(FoundVuln, on_delete=models.CASCADE, related_name='VulnDetails', blank=True, null=True)
     DomainName = models.CharField(max_length=256, blank=True)
@@ -537,7 +529,7 @@ class FoundVulnDetails(BaseModel):
     matchedAt_bodys = models.CharField(max_length=2048, blank=True)
     curl_command = models.TextField(blank=True)
 
-class PythonNuclei(BaseModel):
+class PythonNuclei(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     vulnCard_id= models.ForeignKey(VulnCard, on_delete=models.CASCADE, related_name='PythonNuclei_record')
     Elevate_Vuln = models.CharField(max_length=256, blank=True)
